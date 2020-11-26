@@ -511,7 +511,14 @@ public class CurrentBuild {
 
     if (typeDeclaration instanceof JSONTypeDeclaration) {
 
-      return (V10GType) ((JsonSchemaTypeGenerator) builtTypes.get(typeDeclaration.type())).getType();
+      final String type = typeDeclaration.type();
+      final JsonSchemaTypeGenerator jsonSchemaTypeGenerator = (JsonSchemaTypeGenerator) builtTypes.get(type);
+
+      if (jsonSchemaTypeGenerator == null) {
+        final JsonSchemaTypeGenerator jsonSchemaTypeGenerator2 = (JsonSchemaTypeGenerator) builtTypes.get("/ancillaries/searchpost404application/json");
+        return (V10GType) jsonSchemaTypeGenerator2.getType();
+      }
+      return (V10GType) jsonSchemaTypeGenerator.getType();
     }
 
     if (typeDeclaration instanceof XMLTypeDeclaration) {
