@@ -27,37 +27,35 @@ import java.io.IOException;
  */
 public class RamlToPojoTypeGenerator implements TypeGenerator<ResultingPojos> {
 
-  private final RamlToPojo pojos;
-  private final String name;
-  private final TypeDeclaration typeDeclaration;
-  private final TypeName generatedType;
+    private final RamlToPojo pojos;
+    private final String name;
+    private final TypeDeclaration typeDeclaration;
+    private final TypeName generatedType;
 
-  public RamlToPojoTypeGenerator(RamlToPojo p, String name, TypeDeclaration typeDeclaration, TypeName generatedType) {
-    this.pojos = p;
-    this.name = name;
-    this.typeDeclaration = typeDeclaration;
-    this.generatedType = generatedType;
-  }
+    public RamlToPojoTypeGenerator(RamlToPojo p, String name, TypeDeclaration typeDeclaration, TypeName generatedType) {
+        this.pojos = p;
+        this.name = name;
+        this.typeDeclaration = typeDeclaration;
+        this.generatedType = generatedType;
+    }
 
-  @Override
-  public void output(CodeContainer<ResultingPojos> rootDirectory, BuildPhase buildPhase) throws IOException {
+    @Override
+    public void output(CodeContainer<ResultingPojos> rootDirectory, BuildPhase buildPhase) throws IOException {
 
-    output(rootDirectory);
-  }
+        output(rootDirectory);
+    }
 
-  @Override
-  public TypeName getGeneratedJavaType() {
+    @Override
+    public TypeName getGeneratedJavaType() {
 
-    return generatedType;
-  }
+        return generatedType;
+    }
 
-  @Override
-  public void output(CodeContainer<ResultingPojos> rootDirectory) throws IOException {
+    @Override
+    public void output(CodeContainer<ResultingPojos> rootDirectory) throws IOException {
 
-    ResultingPojos p =
-        pojos
-            .buildPojo(name, typeDeclaration);
+        ResultingPojos p = pojos.buildPojo(name, typeDeclaration);
 
-    rootDirectory.into(p);
-  }
+        rootDirectory.into(p);
+    }
 }
