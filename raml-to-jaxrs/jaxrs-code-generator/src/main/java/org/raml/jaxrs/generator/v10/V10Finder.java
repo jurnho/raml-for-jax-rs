@@ -31,10 +31,6 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 /**
@@ -42,293 +38,293 @@ import java.util.*;
  */
 public class V10Finder implements GFinder {
 
-  private final CurrentBuild build;
-  private final Api api;
+    private final CurrentBuild build;
+    private final Api api;
 
-  private Map<String, V10GType> foundTypes = new HashMap<>();
+    private Map<String, V10GType> foundTypes = new HashMap<>();
 
-  public V10Finder(CurrentBuild build, Api api) {
-    this.build = build;
-    this.api = api;
-  }
-
-  @Override
-  public GFinder findTypes(GFinderListener listener) {
-
-    if (api.uses() != null) {
-
-      goThroughLibraries(new HashSet<String>(), api.uses(), listener);
+    public V10Finder(CurrentBuild build, Api api) {
+        this.build = build;
+        this.api = api;
     }
 
-    localTypes(api.types(), listener);
+    @Override
+    public GFinder findTypes(GFinderListener listener) {
 
-    resourceTypes(api.resources(), listener);
+        if (api.uses() != null) {
 
-    return this;
-  }
-
-  private void resourceTypes(List<Resource> resources, GFinderListener listener) {
-
-    for (Resource resource : resources) {
-
-      resourceTypes(resource.resources(), listener);
-      for (TypeDeclaration parameterTypeDeclaration : resource.uriParameters()) {
-
-        if (!isInline(parameterTypeDeclaration)) {
-          continue;
+            goThroughLibraries(new HashSet<String>(), api.uses(), listener);
         }
 
-        V10GType type =
-            createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, parameterTypeDeclaration),
-                                             Names.javaTypeName(resource, parameterTypeDeclaration), parameterTypeDeclaration);
-        listener.newTypeDeclaration(type);
-      }
+        localTypes(api.types(), listener);
 
-      for (Method method : resource.methods()) {
+        resourceTypes(api.resources(), listener);
 
-        typesInBodies(resource, method, method.body(), listener);
-      }
+        return this;
     }
-  }
 
-  private void typesInBodies(Resource resource, Method method, List<TypeDeclaration> body,
-                             GFinderListener listener) {
+    private void resourceTypes(List<Resource> resources, GFinderListener listener) {
 
-    for (TypeDeclaration typeDeclaration : body) {
+        for (Resource resource : resources) {
 
-      if (!isInline(typeDeclaration)) {
-        continue;
-      }
+            resourceTypes(resource.resources(), listener);
+            for (TypeDeclaration parameterTypeDeclaration : resource.uriParameters()) {
 
-      if ("application/x-www-form-urlencoded".equals(typeDeclaration.name())) {
+                if (!isInline(parameterTypeDeclaration)) {
+                    continue;
+                }
 
-        ObjectTypeDeclaration formParameters = (ObjectTypeDeclaration) typeDeclaration;
-        for (TypeDeclaration formParameter : formParameters.properties()) {
+                V10GType type =
+                        createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, parameterTypeDeclaration),
+                                Names.javaTypeName(resource, parameterTypeDeclaration), parameterTypeDeclaration);
+                listener.newTypeDeclaration(type);
+            }
 
-          V10GType type =
-              createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, formParameter),
-                                               Names.javaTypeName(resource, method, formParameter), formParameter);
-          listener.newTypeDeclaration(type);
+            for (Method method : resource.methods()) {
+
+                typesInBodies(resource, method, method.body(), listener);
+            }
         }
-      } else {
-
-        V10GType type =
-            createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, typeDeclaration),
-                                             Names.javaTypeName(resource, method, typeDeclaration), typeDeclaration);
-        listener.newTypeDeclaration(type);
-      }
     }
 
-    for (TypeDeclaration parameterTypeDeclaration : method.queryParameters()) {
+    private void typesInBodies(Resource resource, Method method, List<TypeDeclaration> body,
+                               GFinderListener listener) {
 
-      if (!isInline(parameterTypeDeclaration)) {
-        continue;
-      }
+        for (TypeDeclaration typeDeclaration : body) {
 
-      V10GType type =
-          createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, parameterTypeDeclaration),
-                                           Names.javaTypeName(resource, method, parameterTypeDeclaration),
-                                           parameterTypeDeclaration);
-      listener.newTypeDeclaration(type);
-    }
+            if (!isInline(typeDeclaration)) {
+                continue;
+            }
 
-    for (TypeDeclaration headerType : method.headers()) {
+            if ("application/x-www-form-urlencoded".equals(typeDeclaration.name())) {
 
-      if (!isInline(headerType)) {
-        continue;
-      }
+                ObjectTypeDeclaration formParameters = (ObjectTypeDeclaration) typeDeclaration;
+                for (TypeDeclaration formParameter : formParameters.properties()) {
 
-      V10GType type =
-          createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, headerType),
-                                           Names.javaTypeName(resource, method, headerType), headerType);
-      listener.newTypeDeclaration(type);
-    }
+                    V10GType type =
+                            createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, formParameter),
+                                    Names.javaTypeName(resource, method, formParameter), formParameter);
+                    listener.newTypeDeclaration(type);
+                }
+            } else {
 
-    for (Response response : method.responses()) {
-      for (TypeDeclaration typeDeclaration : response.body()) {
-
-        if (!isInline(typeDeclaration)) {
-          continue;
+                V10GType type =
+                        createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, typeDeclaration),
+                                Names.javaTypeName(resource, method, typeDeclaration), typeDeclaration);
+                listener.newTypeDeclaration(type);
+            }
         }
 
-        V10GType type =
-            createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, response, typeDeclaration),
-                                             Names.javaTypeName(resource, method, response, typeDeclaration), typeDeclaration);
-        listener.newTypeDeclaration(type);
-      }
-    }
-  }
+        for (TypeDeclaration parameterTypeDeclaration : method.queryParameters()) {
 
-  private void localTypes(List<TypeDeclaration> types, GFinderListener listener) {
+            if (!isInline(parameterTypeDeclaration)) {
+                continue;
+            }
 
-    for (TypeDeclaration typeDeclaration : types) {
+            V10GType type =
+                    createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, parameterTypeDeclaration),
+                            Names.javaTypeName(resource, method, parameterTypeDeclaration),
+                            parameterTypeDeclaration);
+            listener.newTypeDeclaration(type);
+        }
 
+        for (TypeDeclaration headerType : method.headers()) {
 
-      V10GType type = createTypeFromLibraryPart(typeDeclaration);
-      listener.newTypeDeclaration(type);
-    }
-  }
+            if (!isInline(headerType)) {
+                continue;
+            }
 
-  private V10GType putInFoundTypes(String name, V10GType type) {
+            V10GType type =
+                    createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, headerType),
+                            Names.javaTypeName(resource, method, headerType), headerType);
+            listener.newTypeDeclaration(type);
+        }
 
-    foundTypes.put(name, type);
-    return type;
-  }
+        for (Response response : method.responses()) {
+            for (TypeDeclaration typeDeclaration : response.body()) {
 
-  private V10GType createTypeFromLibraryPart(TypeDeclaration typeDeclaration) {
+                if (!isInline(typeDeclaration)) {
+                    continue;
+                }
 
-    if (typeDeclaration instanceof JSONTypeDeclaration) {
-
-      return putInFoundTypes(typeDeclaration.name(),
-                             V10GTypeFactory.createJson((JSONTypeDeclaration) typeDeclaration,
-                                                        typeDeclaration.name(), CreationModel.INLINE_FROM_TYPE));
-    }
-
-    if (typeDeclaration instanceof XMLTypeDeclaration) {
-
-      return putInFoundTypes(typeDeclaration.name(),
-                             V10GTypeFactory.createXml((XMLTypeDeclaration) typeDeclaration,
-                                                       typeDeclaration.name(), CreationModel.INLINE_FROM_TYPE));
-    }
-
-    if (typeDeclaration instanceof ObjectTypeDeclaration) {
-      return putInFoundTypes(typeDeclaration.name(), V10GTypeFactory.createInlineType(typeDeclaration.name(), typeDeclaration));
+                V10GType type =
+                        createInlineFromResourcesAndSuch(Names.ramlTypeName(resource, method, response, typeDeclaration),
+                                Names.javaTypeName(resource, method, response, typeDeclaration), typeDeclaration);
+                listener.newTypeDeclaration(type);
+            }
+        }
     }
 
-    if (typeDeclaration instanceof UnionTypeDeclaration) {
-      return putInFoundTypes(typeDeclaration.name(),
-                             V10GTypeFactory.createUnion(typeDeclaration.name(), (UnionTypeDeclaration) typeDeclaration));
+    private void localTypes(List<TypeDeclaration> types, GFinderListener listener) {
+
+        for (TypeDeclaration typeDeclaration : types) {
+
+
+            V10GType type = createTypeFromLibraryPart(typeDeclaration);
+            listener.newTypeDeclaration(type);
+        }
     }
 
-    if (typeDeclaration instanceof StringTypeDeclaration && !((StringTypeDeclaration) typeDeclaration).enumValues().isEmpty()) {
+    private V10GType putInFoundTypes(String name, V10GType type) {
 
-      return putInFoundTypes(typeDeclaration.name(),
-                             V10GTypeFactory.createEnum(typeDeclaration.name(), (StringTypeDeclaration) typeDeclaration));
+        foundTypes.put(name, type);
+        return type;
     }
 
-    if (typeDeclaration instanceof NumberTypeDeclaration && !((NumberTypeDeclaration) typeDeclaration).enumValues().isEmpty()) {
+    private V10GType createTypeFromLibraryPart(TypeDeclaration typeDeclaration) {
 
-      return putInFoundTypes(typeDeclaration.name(),
-                             V10GTypeFactory.createEnum(typeDeclaration.name(), (NumberTypeDeclaration) typeDeclaration));
+        if (typeDeclaration instanceof JSONTypeDeclaration) {
+
+            return putInFoundTypes(typeDeclaration.name(),
+                    V10GTypeFactory.createJson((JSONTypeDeclaration) typeDeclaration,
+                            typeDeclaration.name(), CreationModel.INLINE_FROM_TYPE));
+        }
+
+        if (typeDeclaration instanceof XMLTypeDeclaration) {
+
+            return putInFoundTypes(typeDeclaration.name(),
+                    V10GTypeFactory.createXml((XMLTypeDeclaration) typeDeclaration,
+                            typeDeclaration.name(), CreationModel.INLINE_FROM_TYPE));
+        }
+
+        if (typeDeclaration instanceof ObjectTypeDeclaration) {
+            return putInFoundTypes(typeDeclaration.name(), V10GTypeFactory.createInlineType(typeDeclaration.name(), typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof UnionTypeDeclaration) {
+            return putInFoundTypes(typeDeclaration.name(),
+                    V10GTypeFactory.createUnion(typeDeclaration.name(), (UnionTypeDeclaration) typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof StringTypeDeclaration && !((StringTypeDeclaration) typeDeclaration).enumValues().isEmpty()) {
+
+            return putInFoundTypes(typeDeclaration.name(),
+                    V10GTypeFactory.createEnum(typeDeclaration.name(), (StringTypeDeclaration) typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof NumberTypeDeclaration && !((NumberTypeDeclaration) typeDeclaration).enumValues().isEmpty()) {
+
+            return putInFoundTypes(typeDeclaration.name(),
+                    V10GTypeFactory.createEnum(typeDeclaration.name(), (NumberTypeDeclaration) typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof ArrayTypeDeclaration) {
+
+            return putInFoundTypes(typeDeclaration.name(), V10GTypeFactory.createArray(typeDeclaration.name(),
+                    (ArrayTypeDeclaration) typeDeclaration
+            ));
+        }
+
+        return putInFoundTypes(typeDeclaration.name(), V10GTypeFactory.createScalar(typeDeclaration.name(), typeDeclaration));
     }
 
-    if (typeDeclaration instanceof ArrayTypeDeclaration) {
+    private boolean isInline(TypeDeclaration typeDeclaration) {
 
-      return putInFoundTypes(typeDeclaration.name(), V10GTypeFactory.createArray(typeDeclaration.name(),
-                                                                                 (ArrayTypeDeclaration) typeDeclaration
-          ));
+        if (typeDeclaration instanceof JSONTypeDeclaration || typeDeclaration instanceof XMLTypeDeclaration) {
+
+            return !foundTypes.containsKey(typeDeclaration.type());
+        }
+
+        if (typeDeclaration instanceof ObjectTypeDeclaration
+                || typeDeclaration instanceof UnionTypeDeclaration
+                || (typeDeclaration instanceof StringTypeDeclaration && !((StringTypeDeclaration) typeDeclaration).enumValues().isEmpty())
+                || (typeDeclaration instanceof NumberTypeDeclaration && !((NumberTypeDeclaration) typeDeclaration).enumValues().isEmpty())) {
+
+            return build.fetchRamlToPojoBuilder().isInline(typeDeclaration);
+        }
+
+        return false;
     }
 
-    return putInFoundTypes(typeDeclaration.name(), V10GTypeFactory.createScalar(typeDeclaration.name(), typeDeclaration));
-  }
+    private V10GType createInlineFromResourcesAndSuch(String ramlName, String suggestedJavaName, TypeDeclaration typeDeclaration) {
 
-  private boolean isInline(TypeDeclaration typeDeclaration) {
+        if (typeDeclaration instanceof JSONTypeDeclaration) {
 
-    if (typeDeclaration instanceof JSONTypeDeclaration || typeDeclaration instanceof XMLTypeDeclaration) {
+            return putInFoundTypes(ramlName, V10GTypeFactory.createJson((JSONTypeDeclaration) typeDeclaration,
+                    ramlName, suggestedJavaName, CreationModel.INLINE_FROM_TYPE));
+        }
 
-      return !foundTypes.containsKey(typeDeclaration.type());
+        if (typeDeclaration instanceof XMLTypeDeclaration) {
+
+            return putInFoundTypes(ramlName, V10GTypeFactory.createXml((XMLTypeDeclaration) typeDeclaration,
+                    ramlName, suggestedJavaName, CreationModel.INLINE_FROM_TYPE));
+        }
+
+        if (typeDeclaration instanceof ObjectTypeDeclaration) {
+            return putInFoundTypes(ramlName, V10GTypeFactory.createInlineType(suggestedJavaName, typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof UnionTypeDeclaration) {
+            return putInFoundTypes(ramlName, V10GTypeFactory.createUnion(suggestedJavaName, (UnionTypeDeclaration) typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof StringTypeDeclaration && !((StringTypeDeclaration) typeDeclaration).enumValues().isEmpty()) {
+
+            return putInFoundTypes(ramlName, V10GTypeFactory.createEnum(suggestedJavaName, (StringTypeDeclaration) typeDeclaration));
+        }
+
+        if (typeDeclaration instanceof ArrayTypeDeclaration) {
+
+            return putInFoundTypes(ramlName, V10GTypeFactory.createArray(ramlName, (ArrayTypeDeclaration) typeDeclaration
+            ));
+        }
+
+        return putInFoundTypes(ramlName, V10GTypeFactory.createScalar(ramlName, typeDeclaration));
     }
 
-    if (typeDeclaration instanceof ObjectTypeDeclaration
-        || typeDeclaration instanceof UnionTypeDeclaration
-        || (typeDeclaration instanceof StringTypeDeclaration && !((StringTypeDeclaration) typeDeclaration).enumValues().isEmpty())
-        || (typeDeclaration instanceof NumberTypeDeclaration && !((NumberTypeDeclaration) typeDeclaration).enumValues().isEmpty())) {
+    private void goThroughLibraries(Set<String> visitedLibraries, List<Library> libraries,
+                                    GFinderListener listener) {
 
-      return build.fetchRamlToPojoBuilder().isInline(typeDeclaration);
+        for (Library library : libraries) {
+            if (visitedLibraries.contains(library.name())) {
+
+                continue;
+            } else {
+
+                visitedLibraries.add(library.name());
+            }
+
+            goThroughLibraries(visitedLibraries, library.uses(), listener);
+            for (TypeDeclaration typeDeclaration : library.types()) {
+
+                V10GType type = createTypeFromLibraryPart(typeDeclaration);
+
+                listener.newTypeDeclaration(type);
+            }
+        }
     }
 
-    return false;
-  }
+    @Override
+    public void setupConstruction(CurrentBuild currentBuild) {
 
-  private V10GType createInlineFromResourcesAndSuch(String ramlName, String suggestedJavaName, TypeDeclaration typeDeclaration) {
 
-    if (typeDeclaration instanceof JSONTypeDeclaration) {
+        List<V10GType> schemaTypes = FluentIterable.from(foundTypes.values()).filter(new Predicate<V10GType>() {
 
-      return putInFoundTypes(ramlName, V10GTypeFactory.createJson((JSONTypeDeclaration) typeDeclaration,
-                                                                  ramlName, suggestedJavaName, CreationModel.INLINE_FROM_TYPE));
+            @Override
+            public boolean apply(@Nullable V10GType input) {
+                return input.isJson() || input.isXml();
+            }
+        }).toList();
+
+        for (V10GType schemaType : schemaTypes) {
+
+            try {
+                Files.write(schemaType.schema(), new File(currentBuild.getSchemaRepository(), schemaType.name()),
+                        Charset.defaultCharset());
+
+            } catch (IOException e) {
+                throw new GenerationException("while writing schemas", e);
+            }
+        }
+
+        if (currentBuild.shouldCopySchemas()) {
+            try {
+                FileCopy.fromTo(currentBuild.getRamlDirectory(), currentBuild.getSchemaRepository());
+            } catch (IOException e) {
+
+                throw new GenerationException("while copying schemas", e);
+            }
+        }
+
     }
-
-    if (typeDeclaration instanceof XMLTypeDeclaration) {
-
-      return putInFoundTypes(ramlName, V10GTypeFactory.createXml((XMLTypeDeclaration) typeDeclaration,
-                                                                 ramlName, suggestedJavaName, CreationModel.INLINE_FROM_TYPE));
-    }
-
-    if (typeDeclaration instanceof ObjectTypeDeclaration) {
-      return putInFoundTypes(ramlName, V10GTypeFactory.createInlineType(suggestedJavaName, typeDeclaration));
-    }
-
-    if (typeDeclaration instanceof UnionTypeDeclaration) {
-      return putInFoundTypes(ramlName, V10GTypeFactory.createUnion(suggestedJavaName, (UnionTypeDeclaration) typeDeclaration));
-    }
-
-    if (typeDeclaration instanceof StringTypeDeclaration && !((StringTypeDeclaration) typeDeclaration).enumValues().isEmpty()) {
-
-      return putInFoundTypes(ramlName, V10GTypeFactory.createEnum(suggestedJavaName, (StringTypeDeclaration) typeDeclaration));
-    }
-
-    if (typeDeclaration instanceof ArrayTypeDeclaration) {
-
-      return putInFoundTypes(ramlName, V10GTypeFactory.createArray(ramlName, (ArrayTypeDeclaration) typeDeclaration
-          ));
-    }
-
-    return putInFoundTypes(ramlName, V10GTypeFactory.createScalar(ramlName, typeDeclaration));
-  }
-
-  private void goThroughLibraries(Set<String> visitedLibraries, List<Library> libraries,
-                                  GFinderListener listener) {
-
-    for (Library library : libraries) {
-      if (visitedLibraries.contains(library.name())) {
-
-        continue;
-      } else {
-
-        visitedLibraries.add(library.name());
-      }
-
-      goThroughLibraries(visitedLibraries, library.uses(), listener);
-      for (TypeDeclaration typeDeclaration : library.types()) {
-
-        V10GType type = createTypeFromLibraryPart(typeDeclaration);
-
-        listener.newTypeDeclaration(type);
-      }
-    }
-  }
-
-  @Override
-  public void setupConstruction(CurrentBuild currentBuild) {
-
-
-    List<V10GType> schemaTypes = FluentIterable.from(foundTypes.values()).filter(new Predicate<V10GType>() {
-
-      @Override
-      public boolean apply(@Nullable V10GType input) {
-        return input.isJson() || input.isXml();
-      }
-    }).toList();
-
-    for (V10GType schemaType : schemaTypes) {
-
-      try {
-        Files.write(schemaType.schema(), new File(currentBuild.getSchemaRepository(), schemaType.name()),
-                    Charset.defaultCharset());
-
-      } catch (IOException e) {
-        throw new GenerationException("while writing schemas", e);
-      }
-    }
-
-    if (currentBuild.shouldCopySchemas()) {
-      try {
-        FileCopy.fromTo(currentBuild.getRamlDirectory(), currentBuild.getSchemaRepository());
-      } catch (IOException e) {
-
-        throw new GenerationException("while copying schemas", e);
-      }
-    }
-
-  }
 }
