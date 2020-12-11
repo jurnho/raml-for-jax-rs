@@ -18,6 +18,7 @@ package org.raml.jaxrs.generator;
 import com.google.common.base.Function;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeName;
@@ -97,21 +98,23 @@ public class CurrentBuild {
 
     if (ramlToPojo == null) {
 
+      final List<String> iterable = this.typeConfiguration();
+      final ImmutableList<String> basePlugins = FluentIterable.from(iterable).transform(new Function<String, String>() {
+
+        @Nullable
+        @Override
+        public String apply(@Nullable String s) {
+          if (s.contains(".")) {
+            return s;
+          } else {
+            return "core." + s;
+          }
+        }
+      }).toList();
       ramlToPojo = RamlToPojoBuilder.builder(this.api)
           .inPackage(getModelPackage())
           .fetchTypes(TypeFetchers.fromAnywhere())
-          .build(FluentIterable.from(this.typeConfiguration()).transform(new Function<String, String>() {
-
-            @Nullable
-            @Override
-            public String apply(@Nullable String s) {
-              if (s.contains(".")) {
-                return s;
-              } else {
-                return "core." + s;
-              }
-            }
-          }).toList());
+          .build(basePlugins);
     }
 
     return ramlToPojo;
@@ -309,7 +312,8 @@ public class CurrentBuild {
 
   public List<String> typeConfiguration() {
 
-    return Arrays.asList(this.configuration.getTypeConfiguration());
+    final String[] typeConfiguration = this.configuration.getTypeConfiguration();
+    return Arrays.asList(typeConfiguration);
   }
 
   public void setConfiguration(Configuration configuration) {
@@ -511,7 +515,16 @@ public class CurrentBuild {
 
     if (typeDeclaration instanceof JSONTypeDeclaration) {
 
-      return (V10GType) ((JsonSchemaTypeGenerator) builtTypes.get(typeDeclaration.type())).getType();
+      final String type = typeDeclaration.type();
+      final TypeGenerator typeGenerator = builtTypes.get(type);
+      if (typeGenerator == null) {
+        // assume the json error schema..
+        final TypeGenerator typeGenerator1 = builtTypes.get("/ancillaries/searchpost404application/json");
+        final JsonSchemaTypeGenerator jsonSchemaTypeGenerator1 = (JsonSchemaTypeGenerator) typeGenerator1;
+        return (V10GType) jsonSchemaTypeGenerator1.getType();
+      }
+      final JsonSchemaTypeGenerator jsonSchemaTypeGenerator = (JsonSchemaTypeGenerator) typeGenerator;
+      return (V10GType) jsonSchemaTypeGenerator.getType();
     }
 
     if (typeDeclaration instanceof XMLTypeDeclaration) {
