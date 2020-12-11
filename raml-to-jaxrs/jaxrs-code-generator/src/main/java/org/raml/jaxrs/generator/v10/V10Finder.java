@@ -309,8 +309,11 @@ public class V10Finder implements GFinder {
         for (V10GType schemaType : schemaTypes) {
 
             try {
-                Files.write(schemaType.schema(), new File(currentBuild.getSchemaRepository(), schemaType.name()),
-                        Charset.defaultCharset());
+                final String schema = schemaType.schema();
+                final String name = schemaType.name().replaceAll("/", "_");
+
+                final File to = new File(currentBuild.getSchemaRepository(), name);
+                Files.write(schema, to, Charset.defaultCharset());
 
             } catch (IOException e) {
                 throw new GenerationException("while writing schemas", e);
