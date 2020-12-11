@@ -50,5 +50,5 @@ sed -i 's/ PassengerTicketImpl.class/ AbbreviatedTicketDetailsImpl.PassengerTick
 # any object
 grep --files-with-matches "Root" java/com/triplake/adapter/kmapi/jaxrs/api/model/*.java | xargs sed -i 's/<Root>/<com.triplake.adapter.kmapi.jaxrs.api.model.fix.Any>/'
 
-# fix up resource
-
+# fix up resource.. remove delegate
+sed -i 's/PostFlightsSearchResponse postFlightsSearch/SearchFlightResponse postFlightsSearch/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Flights.java
