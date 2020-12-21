@@ -53,3 +53,4 @@ grep --files-with-matches "Root" java/com/triplake/adapter/kmapi/jaxrs/api/model
 # fix up resource.. remove delegate
 sed -i 's/PostFlightsSearchResponse postFlightsSearch/SearchFlightResponse postFlightsSearch/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Flights.java
 sed -i 's/PostReservationsQuoteResponse postReservationsQuote/QuoteReservationResponse postReservationsQuote/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
+sed -i 's/PostReservationsResponse postReservations/CreateReservationResponse postReservations/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
