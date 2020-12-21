@@ -54,3 +54,6 @@ grep --files-with-matches "Root" java/com/triplake/adapter/kmapi/jaxrs/api/model
 sed -i 's/PostFlightsSearchResponse postFlightsSearch/SearchFlightResponse postFlightsSearch/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Flights.java
 sed -i 's/PostReservationsQuoteResponse postReservationsQuote/QuoteReservationResponse postReservationsQuote/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
 sed -i 's/PostReservationsResponse postReservations/CreateReservationResponse postReservations/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
+sed -i 's/GetReservationsByPnrLocatorResponse getReservationsByPnrLocator/GetReservationResponse getReservationsByPnrLocator/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
+sed -i 's/PostTicketsIssueResponse postTicketsIssue/TicketsIssueResponse postTicketsIssue/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Tickets.java
+
