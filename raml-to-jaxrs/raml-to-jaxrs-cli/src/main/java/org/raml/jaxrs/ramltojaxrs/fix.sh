@@ -56,4 +56,8 @@ sed -i 's/PostReservationsQuoteResponse postReservationsQuote/QuoteReservationRe
 sed -i 's/PostReservationsResponse postReservations/CreateReservationResponse postReservations/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
 sed -i 's/GetReservationsByPnrLocatorResponse getReservationsByPnrLocator/GetReservationResponse getReservationsByPnrLocator/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Reservations.java
 sed -i 's/PostTicketsIssueResponse postTicketsIssue/TicketsIssueResponse postTicketsIssue/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Tickets.java
-
+## seats
+sed -i 's/PostSeatsSearchResponse postSeatsSearch/RetrieveSeatMapResponse postSeatsSearch/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Seats.java
+## ancillaries
+sed -i 's/PostAncillariesSearchResponse postAncillariesSearch/AncillariesSearchResponse postAncillariesSearch/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Ancillaries.java
+sed -i 's/PostAncillariesSearchAdvancedResponse postAncillariesSearchAdvanced/AncillariesSearchAdvancedResponse postAncillariesSearchAdvanced/g' java/com/triplake/adapter/kmapi/jaxrs/api/resource/Ancillaries.java
